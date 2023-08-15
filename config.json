@@ -1,9 +1,9 @@
 {
 	"team_data": {
-		"name": "GPU-go-brrrr"
+		"name": "catNIPS"
 	},
 	"training_parms": {
-		"method": "baseline (average)",
+		"method": "MeanDiff",
 		"dummy_value": 1000
 	},
 	"dirs": {
