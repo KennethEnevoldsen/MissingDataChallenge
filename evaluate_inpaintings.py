@@ -1,13 +1,19 @@
 import argparse
-from skimage import io
+import multiprocessing
 import os
 import pathlib
+from functools import partial
+
+from skimage import io
+from skimage.metrics import (
+    mean_squared_error,
+    peak_signal_noise_ratio,
+    structural_similarity,
+)
+from tqdm import tqdm
+
 from inpaint_config import InPaintConfig
 from inpaint_tools import read_file_list
-from skimage.metrics import structural_similarity
-from skimage.metrics import mean_squared_error
-from skimage.metrics import peak_signal_noise_ratio
-from tqdm import tqdm
 
 
 def compute_inpaint_metrics(org_img, inpainted_img):
@@ -16,6 +22,17 @@ def compute_inpaint_metrics(org_img, inpainted_img):
     psnr = peak_signal_noise_ratio(org_img, inpainted_img)
 
     return {"mse": mse_val, "ssim": ssim, "psnr": psnr}
+
+
+def compute_metrics(idx, input_data_dir, inpainted_result_dir):
+    org_image_name = os.path.join(input_data_dir, "originals", f"{idx}.jpg")
+    inpainted_image_name = os.path.join(inpainted_result_dir, f"{idx}.png")
+
+    im_org = io.imread(org_image_name)
+    im_inpainted = io.imread(inpainted_image_name)
+
+    metrics = compute_inpaint_metrics(im_org, im_inpainted)
+    return f'{idx}, {metrics["mse"]}, {metrics["ssim"]}, {metrics["psnr"]}\n'
 
 
 def evaluate_inpainting(settings):
@@ -35,24 +52,36 @@ def evaluate_inpainting(settings):
     if file_ids is None:
         return
 
-    f = open(evaluation_file, 'w')
+    f = open(evaluation_file, "w")
     print(f"Evaluating {len(file_ids)} images")
 
-    f.write('id, mse, ssim, psnr\n')
-    for idx in tqdm(file_ids):
-        org_image_name = os.path.join(input_data_dir, "originals", f"{idx}.jpg")
-        inpainted_image_name = os.path.join(inpainted_result_dir, f"{idx}.png")
+    mse, ssim, psnr = [], [], []
+    f.write("id, mse, ssim, psnr\n")
+    # f.write("id,mse,ssim,psnr\n")
 
-        im_org = io.imread(org_image_name)
-        im_inpainted = io.imread(inpainted_image_name)
+    _compute_metrics = partial(
+        compute_metrics,
+        input_data_dir=input_data_dir,
+        inpainted_result_dir=inpainted_result_dir,
+    )
+    with multiprocessing.Pool(4) as pool:
+        output = pool.imap(_compute_metrics, tqdm(file_ids))
+        for line in output:
+            f.write(line)
+            idx, mse_val, ssim_val, psnr_val = line.split(",")
+            mse.append(float(mse_val))
+            ssim.append(float(ssim_val))
+            psnr.append(float(psnr_val))
 
-        metrics = compute_inpaint_metrics(im_org, im_inpainted)
-        # print(f'MSE: {metrics["mse"]} SSIM: {metrics["ssim"]} PSNR: {metrics["psnr"]}')
-        f.write(f'{idx}, {metrics["mse"]}, {metrics["ssim"]}, {metrics["psnr"]}\n')
+    f.close()
+
+    print(f"Average MSE: {sum(mse) / len(mse):.2f}")
+    print(f"Average SSIM: {sum(ssim) / len(ssim):.2f}")
+    print(f"Average PSNR: {sum(psnr) / len(psnr):.2f}")
 
 
-if __name__ == '__main__':
-    args = argparse.ArgumentParser(description='EvaluateInPaintings')
+if __name__ == "__main__":
+    args = argparse.ArgumentParser(description="EvaluateInPaintings")
     config = InPaintConfig(args)
     if config.settings is not None:
         evaluate_inpainting(config.settings)
