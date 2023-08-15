@@ -1,14 +1,14 @@
 {
 	"team_data": {
-		"name": "GPU-go-brrrr",
+		"name": "GPU-go-brrrr"
 	},
 	"training_parms": {
-		"method": "just another method",
+		"method": "baseline (average)",
 		"dummy_value": 1000
 	},
 	"dirs": {
-		"input_data_dir": "C:/data/Cats/MissingDataOpenData/",
-		"output_data_dir": "C:/data/Cats/missing_data_output/"
+		"input_data_dir": "data/",
+		"output_data_dir": "output/"
 	},
 	"challenge_server": {
 		"address": "http://fungi.compute.dtu.dk:8080"

@@ -120,3 +120,13 @@ __MACOSX/
 Inspiration/*
 *.zip
 *movie*
+
+# data
+output/
+data/
+
+# Mac OS
+.DS_store
+
+
+
