@@ -12,7 +12,6 @@ from diffusers.utils.logging import disable_progress_bar
 
 from tqdm import tqdm
 
-from diffusers import DDIMScheduler
 from diffusers import DPMSolverMultistepScheduler
 
 disable_progress_bar()
@@ -38,7 +37,7 @@ def load_file_list(
 
 
 def main(
-        file_names: Path = Path("data/data_splits/test_200.txt"), 
+        file_names: Path = Path("data/data_splits/validation_50.txt"), 
          output_path: Path = Path("output/")
          ):
 
@@ -57,7 +56,7 @@ def main(
     )
     pipe.to("cuda")
     pipe.enable_xformers_memory_efficient_attention()
-    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+    # pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
     # pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
     pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
 
@@ -79,32 +78,34 @@ def main(
         #                  ).images[0]
 
         # # generate mulitple images
+        n_img = 30
+        guidance_scale = 3.0
+        n_steps = 1
+
         gen_images1 = pipe(prompt=prompt,
                          image=masked_img,
                          mask_image=mask,
-                         num_inference_steps=1,
-                         num_images_per_prompt=10,
+                         num_inference_steps=n_steps,
+                         num_images_per_prompt=n_img,
+                         guidance_scale=guidance_scale,
                          ).images
 
         gen_images2 = pipe(prompt="",
                          image=masked_img,
                          mask_image=mask,
-                         num_inference_steps=1,
-                         num_images_per_prompt=10,
+                         num_inference_steps=n_steps,
+                         num_images_per_prompt=n_img,
+                         guidance_scale=guidance_scale,
                          ).images
     
         gen_images3 = pipe(prompt="the face of a cat",
                          image=masked_img,
                          mask_image=mask,
-                         num_inference_steps=1,
-                         num_images_per_prompt=10,
+                         num_inference_steps=n_steps,
+                         num_images_per_prompt=n_img,
+                         guidance_scale=guidance_scale,
                          ).images
         gen_images = gen_images1 + gen_images2 + gen_images3
-
-        # visualize the 10 generated images
-        for gen_image in gen_images:
-            plt.imshow(gen_image)
-            plt.show()
             
         # compute the mean of the generated PIL images
         numpy_images = [numpy.array(gen_image) for gen_image in gen_images]
@@ -112,6 +113,16 @@ def main(
         mean_image = Image.fromarray(mean_image.astype(numpy.uint8))
         # plt.imshow(mean_image)
         gen_image = mean_image
+
+        # # for each of the images measure the distance to the mean image
+        # # distances = [numpy.linalg.norm(numpy.array(gen_image) - numpy.array(mean_image)) for gen_image in gen_images]
+        # # calculate distance using ssim
+        # from skimage.metrics import structural_similarity as ssim
+        # distances = [ssim(numpy.array(gen_image), numpy.array(mean_image), channel_axis=2) for gen_image in gen_images]
+        # # select the image with the smallest distance
+        # gen_image = gen_images[numpy.argmin(distances)]
+        # # convert
+        # gen_image = Image.fromarray(numpy.array(gen_image).astype(numpy.uint8))
 
         # visualize the generated image
         # plt.imshow(gen_image.cpu().numpy().transpose(1, 2, 0))

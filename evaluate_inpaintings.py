@@ -75,9 +75,9 @@ def evaluate_inpainting(settings):
 
     f.close()
 
-    print(f"Average MSE: {sum(mse) / len(mse):.2f}")
-    print(f"Average SSIM: {sum(ssim) / len(ssim):.2f}")
-    print(f"Average PSNR: {sum(psnr) / len(psnr):.2f}")
+    print(f"Average MSE: {sum(mse) / len(mse):.3f}")
+    print(f"Average SSIM: {sum(ssim) / len(ssim):.3f}")
+    print(f"Average PSNR: {sum(psnr) / len(psnr):.3f}")
 
 
 if __name__ == "__main__":
