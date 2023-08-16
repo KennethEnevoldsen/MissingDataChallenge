@@ -1,9 +1,9 @@
 {
 	"team_data": {
-		"name": "catNIPS"
+		"name": "catNIPS (feat. PurrfectPixel)"
 	},
 	"training_parms": {
-		"method": "MeanDiff",
+		"method": "MeanDiff+",
 		"dummy_value": 1000
 	},
 	"dirs": {

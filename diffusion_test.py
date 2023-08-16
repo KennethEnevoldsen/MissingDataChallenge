@@ -37,7 +37,7 @@ def load_file_list(
 
 
 def main(
-        file_names: Path = Path("data/data_splits/validation_50.txt"), 
+        file_names: Path = Path("data/data_splits/test_200.txt"), 
          output_path: Path = Path("output/")
          ):
 
@@ -78,9 +78,9 @@ def main(
         #                  ).images[0]
 
         # # generate mulitple images
-        n_img = 30
+        n_img = 50 # TODO: move back to 10 # TODO: check det 
         guidance_scale = 3.0
-        n_steps = 1
+        n_steps = 20 # TODO move back to 1   
 
         gen_images1 = pipe(prompt=prompt,
                          image=masked_img,
@@ -106,13 +106,30 @@ def main(
                          guidance_scale=guidance_scale,
                          ).images
         gen_images = gen_images1 + gen_images2 + gen_images3
-            
+
         # compute the mean of the generated PIL images
         numpy_images = [numpy.array(gen_image) for gen_image in gen_images]
         mean_image = numpy.mean(numpy_images, axis=0)
         mean_image = Image.fromarray(mean_image.astype(numpy.uint8))
         # plt.imshow(mean_image)
         gen_image = mean_image
+
+        # compute the median of the generated PIL images
+        numpy_images = [numpy.array(gen_image) for gen_image in gen_images]
+        median_image = numpy.median(numpy_images, axis=0)
+        median_image = Image.fromarray(median_image.astype(numpy.uint8))
+        gen_image = median_image
+
+        from skimage.metrics import structural_similarity as ssim
+        # check which one is best compared to the original image
+        orig_img = Image.open(orig_path)
+        # resize
+        mean_img = mean_image.resize(orig_img.size)
+        median_img = median_image.resize(orig_img.size)
+        # compute ssim
+        ssim_mean = ssim(numpy.array(orig_img), numpy.array(mean_img), channel_axis=2)
+        ssim_median = ssim(numpy.array(orig_img), numpy.array(median_img), channel_axis=2)
+
 
         # # for each of the images measure the distance to the mean image
         # # distances = [numpy.linalg.norm(numpy.array(gen_image) - numpy.array(mean_image)) for gen_image in gen_images]
